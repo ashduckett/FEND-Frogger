@@ -85,63 +85,76 @@ Character.prototype.moveToTile = function(tileX, tileY, extraXOffset, extraYOffs
     }
 };
 
+var Point = function(x, y) {
+    this.x = x;
+    this.y = y;
+};
 
 
-
-// Implement this
+// Make this all nice and neat. Also for rendering the boundingboxes figure out
+// Maybe a Point class?
 Character.prototype.isCollidingWith = function(anotherSprite) {
-    // We should get hold of the four points
-
-    // Is the top left point inside another sprite?
+    // this is Player
 
     var topLeftIn = false;
     var bottomLeftIn = false;
     var topRightIn = false;
     var bottomRightIn = false;
 
-    var topLeftX = this.x;
-    var topLeftY = this.y;
+// start new code - build up the screen coordinates of the collision box of the Player object. The this object.
+    var topLeftCollisionPoint = new Point(this.x + this.collisionBB.x, this.y + this.collisionBB.y);
+    var topRightCollisionPoint = new Point(this.x + this.collisionBB.x + this.collisionBB.width, this.y + this.collisionBB.y);
+    var bottomLeftCollisionPoint = new Point(this.x + this.collisionBB.x, this.y + this.collisionBB.y + this.collisionBB.height);
+    var bottomRightCollisionPoint = new Point(this.x + this.collisionBB.x + this.collisionBB.width, this.y + this.collisionBB.y + this.collisionBB.height);
+// end new code
 
-    var bottomLeftY = this.y + this.height;
-    var bottomLeftX = this.x;
+    // If the top left y coordinate is greater than
+    var bbTop = anotherSprite.y + anotherSprite.collisionBB.y;
+    var bbBottom = anotherSprite.y + anotherSprite.collisionBB.y + anotherSprite.collisionBB.height;
+    var bbLeft = anotherSprite.x + anotherSprite.collisionBB.x;
+    var bbRight = anotherSprite.x + anotherSprite.collisionBB.x + anotherSprite.collisionBB.width;
 
-    var topRightX = this.x + this.width;
-    var topRightY = this.y;
-
-    var bottomRightX = this.x + this.width;
-    var bottomRightY = this.y + this.height;
-
-   // console.log(anotherSprite);
-
-
-    if(topLeftY >= anotherSprite.y && topLeftY <= anotherSprite.y + anotherSprite.height && this.x >= anotherSprite.x && this.x <= anotherSprite.x + anotherSprite.width) {
+    if(topLeftCollisionPoint.y >= bbTop && topLeftCollisionPoint.y <= bbBottom && topLeftCollisionPoint.x >= bbLeft && topLeftCollisionPoint.x <= bbRight) {
         topLeftIn = true;
-        console.log('hit!');
+        console.log('collision! top left.');
     }
 
-    if(bottomLeftY >= anotherSprite.y && bottomLeftY <= anotherSprite.y + anotherSprite.height && bottomLeftX >= anotherSprite.x && bottomLeftX <= anotherSprite.x + anotherSprite.width) {
+    // Should be working?
+    if((bottomLeftCollisionPoint.y >= bbTop) && (bottomLeftCollisionPoint.y <= bbBottom) && (bottomLeftCollisionPoint.x >= bbLeft) && (bottomLeftCollisionPoint.x <= bbRight)) {
         bottomLeftIn = true;
+        console.log('collision! bottom left.');
     }
 
-    if(topRightY >= anotherSprite.y && topRightY <= anotherSprite.y + anotherSprite.height && topRightX >= anotherSprite.x && topRightX <= anotherSprite.x + anotherSprite.width) {
-        topRightIn = true;
-    }
+   //  // Should be working
+     if(topRightCollisionPoint.y >= bbTop && topRightCollisionPoint.y <= bbBottom && topRightCollisionPoint.x >= bbLeft && topRightCollisionPoint.x <= bbRight) {
+         console.log('collision! top right.');
+         topRightIn = true;
+     }
 
-    if(bottomRightY >= anotherSprite.y && bottomRightY <= anotherSprite.y + anotherSprite.height && bottomRightX >= anotherSprite.x && bottomRightX <= anotherSprite.x + anotherSprite.width) {
-        bottomRightIn = true;
-    }
+     if(bottomRightCollisionPoint.y >= bbTop && bottomRightCollisionPoint.y <= bbBottom && bottomRightCollisionPoint.x >= bbLeft && bottomRightCollisionPoint.x <= bbRight) {
+         console.log('collision! bottom right.');
+         bottomRightIn = true;
+     }
        
-    //console.log('returning ' + topLeftIn || bottomLeftIn || topRightIn || bottomRightIn);
+    
     return topLeftIn || bottomLeftIn || topRightIn || bottomRightIn;
 };
 
+
+var oldRect = null;
+
 Character.prototype.render = function() {
     ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
-
+   
     if(this.collisionBB != null && this.collisionBB instanceof Rect) {
-       // ctx.strokeStyle = "red";
-     //   ctx.rect(this.x + this.collisionBB.x, this.y + this.collisionBB.y, this.collisionBB.width, this.collisionBB.height);
-        //ctx.stroke();
+
+        // Without calling beginPath() each bounding box is rendered without removing the last
+        ctx.beginPath();
+        ctx.strokeStyle = "red";
+        ctx.rect(this.x + this.collisionBB.x, this.y + this.collisionBB.y, this.collisionBB.width, this.collisionBB.height);
+        
+        ctx.stroke();
+
     }
 };
 
@@ -196,8 +209,8 @@ Player.prototype.constructor = Player;
 
 Player.prototype.update = function() {
     allEnemies.forEach(function(enemy) {
-        if(enemy.isCollidingWith(this)) {
-         //   console.log('collision!');
+        if(this.isCollidingWith(enemy)) {
+            console.log('collision!');
         }
     }, this);
 };
@@ -239,7 +252,7 @@ var bug1 = new Enemy('images/enemy-bug.png', 50, 50, 101, 171, 1, 100, enemyColl
 var bug2 = new Enemy('images/enemy-bug.png', 50, 50, 101, 171, 2, 200, enemyCollisionBB);
 var bug3 = new Enemy('images/enemy-bug.png', 50, 50, 101, 171, 3, 300, enemyCollisionBB);
 
-var allEnemies = [bug1, bug2, bug3];
+var allEnemies = [bug1];//, bug2, bug3];
 
 // If we specify a bounding box relative to the image itself we should be able
 // to pass it in
