@@ -1,74 +1,53 @@
-
-
-// You need to
-    // Sort out the character going off screen
-    // Sort out the bug starting position
-    // Sort out collisions. Could be a method on Character
-
-
-// Collisions need to use a bounding box. That way I can select which parts should be colliding with which.
-
-// Let's start with a rectangle class.
-// Remember that this needs to be updated as the sprite moves.
-// Start by setting it up when the sprite first appears
-
-
-// Constructed relative to an image's position
-var Rect = function(x, y, width, height) {
-    this.x = x;
-    this.y = y;
-    this.width = width;
-    this.height = height;
-}; 
-
-// Collision box is specified relative to current image
-var Character = function(spriteURL, x, y, width, height, collisionBB) {
+var Sprite = function(spriteURL, x, y, width, height, collisionBB) {
     this.sprite = spriteURL;
     this.x = x;
     this.y = y;
     this.width = width;
     this.height = height;
 
+    // If there is a collision box passed in, use it, otherwise make one based on sprite dimensions
+    if(collisionBB != null && collisionBB instanceof Rect) {
+        this.collisionBB = collisionBB;
+    } else {
+        this.collisionBB = new Rect(0, 0, width, height);
+    }
+};
+
+Sprite.prototype.getScreenPosCollisionRect = function() {
+    var top = this.y + this.collisionBB.y;
+    var bottom = this.y + this.collisionBB.y + this.collisionBB.height;
+    var left = this.x + this.collisionBB.x;
+    var right = this.x + this.collisionBB.x + this.collisionBB.width;
+
+    return new Rect(left, top, right - left, bottom - top);
+};
+
+
+Sprite.prototype.isCollidingWith = function(anotherSprite) {
+    var rect1 = this.getScreenPosCollisionRect();
+    var rect2 = anotherSprite.getScreenPosCollisionRect();
+
+    // This method of collision detection looks for gaps. It's much faster than some ways of doing it. Found it on mozilla's game dev site
+    if (rect1.x < rect2.x + rect2.width && rect1.x + rect1.width > rect2.x && rect1.y < rect2.y + rect2.height && rect1.height + rect1.y > rect2.y) {
+        return true;
+    }
+    return false;
+
+};
+
+// Collision box is specified relative to current image
+var Character = function(spriteURL, x, y, width, height, collisionBB) {
+    Sprite.call(this, spriteURL, x, y, width, height, collisionBB);
+
     // A place to store the last place a character was positioned specifically on a tile
     this.lastXTileSet = null;
     this.lastYTileSet = null;
-
-    // By default have MIGHT HAVE a collision rect around the whole sprite
-
-
-    // If we have a bounding box, make it relative to the sprite
-    
-    
-    if(collisionBB != null && collisionBB instanceof Rect) {
-        this.collisionBB = collisionBB;
-    }
-
 };
 
-/* Thinking about it, this isn't exactly what you wanted. Doing it this way,
-it will pick up before the enemy's even started moving, so you need to rethink this */
-Character.prototype.isOffCanvas = function() {
+Character.prototype = Object.create(Sprite.prototype);
+Character.prototype.constructor = Character;
 
-    var tooFarRight = this.x > ctx.canvas.width;
-    var tooFarLeft = (this.x + this.width) < 0;
-    var tooLow = this.y > ctx.canvas.height;
-    var tooHigh = (this.y + this.height) > 0;
-
-  //  console.log(tooFarRight || tooFarLeft || tooHigh || tooLow);
-    return tooFarRight;// || tooFarLeft || tooHigh || tooLow;
-};
-
-
-// Note that this is kind of specialised for the player and 
-// not the enemy at the moment since an offset is added to move
-// the sprite up and variables need to be renamed
-
-// This method may be less important if we change from moving from
-// tile to tile, which I think might be good...
 Character.prototype.moveToTile = function(tileX, tileY, extraXOffset, extraYOffset) {
-    var canvasHeight = 606;
-    var canvasWidth = 505;
- 
     var characterYOffset = 83;
     var characterXOffset = 101;
 
@@ -85,78 +64,16 @@ Character.prototype.moveToTile = function(tileX, tileY, extraXOffset, extraYOffs
     }
 };
 
-var Point = function(x, y) {
-    this.x = x;
-    this.y = y;
-};
-
-
-// Make this all nice and neat. Also for rendering the boundingboxes figure out
-// Maybe a Point class?
-Character.prototype.isCollidingWith = function(anotherSprite) {
-    // this is Player
-
-    var topLeftIn = false;
-    var bottomLeftIn = false;
-    var topRightIn = false;
-    var bottomRightIn = false;
-
-// start new code - build up the screen coordinates of the collision box of the Player object. The this object.
-    var topLeftCollisionPoint = new Point(this.x + this.collisionBB.x, this.y + this.collisionBB.y);
-    var topRightCollisionPoint = new Point(this.x + this.collisionBB.x + this.collisionBB.width, this.y + this.collisionBB.y);
-    var bottomLeftCollisionPoint = new Point(this.x + this.collisionBB.x, this.y + this.collisionBB.y + this.collisionBB.height);
-    var bottomRightCollisionPoint = new Point(this.x + this.collisionBB.x + this.collisionBB.width, this.y + this.collisionBB.y + this.collisionBB.height);
-// end new code
-
-    // If the top left y coordinate is greater than
-    var bbTop = anotherSprite.y + anotherSprite.collisionBB.y;
-    var bbBottom = anotherSprite.y + anotherSprite.collisionBB.y + anotherSprite.collisionBB.height;
-    var bbLeft = anotherSprite.x + anotherSprite.collisionBB.x;
-    var bbRight = anotherSprite.x + anotherSprite.collisionBB.x + anotherSprite.collisionBB.width;
-
-    if(topLeftCollisionPoint.y >= bbTop && topLeftCollisionPoint.y <= bbBottom && topLeftCollisionPoint.x >= bbLeft && topLeftCollisionPoint.x <= bbRight) {
-        topLeftIn = true;
-        console.log('collision! top left.');
-    }
-
-    // Should be working?
-    if((bottomLeftCollisionPoint.y >= bbTop) && (bottomLeftCollisionPoint.y <= bbBottom) && (bottomLeftCollisionPoint.x >= bbLeft) && (bottomLeftCollisionPoint.x <= bbRight)) {
-        bottomLeftIn = true;
-        console.log('collision! bottom left.');
-    }
-
-   //  // Should be working
-     if(topRightCollisionPoint.y >= bbTop && topRightCollisionPoint.y <= bbBottom && topRightCollisionPoint.x >= bbLeft && topRightCollisionPoint.x <= bbRight) {
-         console.log('collision! top right.');
-         topRightIn = true;
-     }
-
-     if(bottomRightCollisionPoint.y >= bbTop && bottomRightCollisionPoint.y <= bbBottom && bottomRightCollisionPoint.x >= bbLeft && bottomRightCollisionPoint.x <= bbRight) {
-         console.log('collision! bottom right.');
-         bottomRightIn = true;
-     }
-       
-    
-    return topLeftIn || bottomLeftIn || topRightIn || bottomRightIn;
-};
-
-
-var oldRect = null;
 
 Character.prototype.render = function() {
+
+// Put this somewhere better!///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  //ctx.font = "20px Georgia";
+    //    ctx.fillText("Score: ", 10, 10);// + score, 0, 0);
+
     ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
-   
-    if(this.collisionBB != null && this.collisionBB instanceof Rect) {
-
-        // Without calling beginPath() each bounding box is rendered without removing the last
-        ctx.beginPath();
-        ctx.strokeStyle = "red";
-        ctx.rect(this.x + this.collisionBB.x, this.y + this.collisionBB.y, this.collisionBB.width, this.collisionBB.height);
-        
-        ctx.stroke();
-
-    }
 };
+
 
 
 
@@ -165,7 +82,18 @@ var Enemy = function(sprite, x, y, width, height, startingRow, speed, collisionB
     Character.call(this, sprite, x, y, width, height, collisionBoundingBox);
     this.moveToTile(-1, startingRow);
     this.startingRow = startingRow;
-    this.speed = speed;
+    
+    var speed = MathsUtils.getRandomInt(1, 3);
+
+    this.speed = speed * 100;
+
+    // Add an emitter to each enemy
+    this.emitter = new Emitter(x - 10, y + 100, 2);
+
+    // If the enemy is moving at its fastest, emit the smoke
+    if(this.speed == 300) {
+        this.emitter.start();
+    }
 };
 
 Enemy.prototype = Object.create(Character.prototype);
@@ -178,28 +106,57 @@ Enemy.prototype.update = function(dt) {
     // which will ensure the game runs at the same speed for
     // all computers.
     this.x += this.speed * dt;
- 
-    if(this.isOffCanvas()) {
+
+    if(this.hasFinishedRun()) {
+
+        var speed = MathsUtils.getRandomInt(1, 3);
+        this.speed = speed * 100;
+
         this.moveToTile(-1, this.startingRow);
+
+        if(this.speed == 300) {
+            this.emitter.start();
+        } else {
+            this.emitter.stop();
+        }
     }
+
+    this.emitter.setPos(this.x - 10, this.y + 100);
 };
+
+Enemy.prototype.hasFinishedRun = function() {
+    return this.x > ctx.canvas.width;
+};
+
 
 // Now write your own player class
 // This class requires an update(), render() and
 // a handleInput() method.
-// var Character = function(spriteURL, x, y, width, height, collisionBoundingBox) {
 var Player = function(sprite, x, y, width, height, collisionBB) {
     Character.call(this, sprite, x, y, width, height, collisionBB);
-
-   // console.log(x);
-
- //   var playerCollisionBB = new Rect(this.x + 35, this.y + 120, this.width - 70, this.height - 150);
-   // this.collisionBB = playerCollisionBB;
+    this.score = 0;
     // If not enough information is set, move the character to the 
     // starting position
     if(!x || !y) {
         this.moveToTile(2, 5);
     }
+
+    var context = this;
+
+    this.winAnimationTimer = new Timer(function() {
+
+            var curFrame = context.winAnimationTimer.currentFrame;
+
+            if(curFrame == 1 || curFrame == 3) {
+                context.y += 10;
+            } else {
+                context.y -= 10;
+            }
+    }, 250, 4, false, function() {
+        context.moveToTile(2, 5);
+        context.score += 10;
+    });
+
 };
 
 Player.prototype = Object.create(Character.prototype);
@@ -207,13 +164,42 @@ Player.prototype.constructor = Player;
 
 
 
-Player.prototype.update = function() {
-    allEnemies.forEach(function(enemy) {
-        if(this.isCollidingWith(enemy)) {
-            console.log('collision!');
-        }
-    }, this);
+
+Player.prototype.getScore = function() {
+    return this.score;
 };
+
+Player.prototype.update = function() {
+    var collisionFound = false;
+    var winFound = false;
+
+    // Use regular for loop so we can break out early if apt
+    for(var i = 0; i < allEnemies.length; i++) {
+        if(this.isCollidingWith(allEnemies[i])) {
+            collisionFound = true;
+            break;
+        }
+    }
+
+    // If there was a collision, send player back to starting position
+    if(collisionFound == true) {
+        this.moveToTile(2, 5);
+    }
+
+    // Check for win
+    var context = this; // do this with bind later
+    
+
+    if(this.lastYTileSet == 0) {
+        this.winAnimationTimer.start();
+
+    }
+};
+
+// Object Type to:
+    // Store frame limit, when should it stop? Logic for each interval. currentFrame.
+    // How can i include the isJumpingForWin and hasStarted booleans?
+
 
 Player.prototype.handleInput = function(keypressed) {
     // Keypressed is a string and describes direction
@@ -252,7 +238,7 @@ var bug1 = new Enemy('images/enemy-bug.png', 50, 50, 101, 171, 1, 100, enemyColl
 var bug2 = new Enemy('images/enemy-bug.png', 50, 50, 101, 171, 2, 200, enemyCollisionBB);
 var bug3 = new Enemy('images/enemy-bug.png', 50, 50, 101, 171, 3, 300, enemyCollisionBB);
 
-var allEnemies = [bug1];//, bug2, bug3];
+var allEnemies = [bug1, bug2, bug3];
 
 // If we specify a bounding box relative to the image itself we should be able
 // to pass it in

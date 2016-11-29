@@ -14,6 +14,12 @@
  * a little simpler to work with.
  */
 
+var loseStartTime = null;
+var interval = null;
+
+
+var myTimer = null;
+
 var Engine = (function(global) {
     /* Predefine the variables we'll be using within this scope,
      * create the canvas element, grab the 2D context for that canvas
@@ -29,6 +35,8 @@ var Engine = (function(global) {
     canvas.height = 606;
     doc.body.appendChild(canvas);
 
+
+
     /* This function serves as the kickoff point for the game loop itself
      * and handles properly calling the update and render methods.
      */
@@ -40,7 +48,12 @@ var Engine = (function(global) {
          * would be the same for everyone (regardless of how fast their
          * computer is) - hurray time!
          */
+
+         // Grab the number of milliseconds since 1 January 1970 00:00:00 UTC
         var now = Date.now(),
+
+        // Take the difference between now and the time the last tick. This
+        //
         dt = (now - lastTime) / 1000.0;
 
         /* Call our update/render functions, pass along the time delta to
@@ -60,6 +73,8 @@ var Engine = (function(global) {
        
         win.requestAnimationFrame(main);
     }
+
+
 
     /* This function does some initial setup that should only occur once,
      * particularly setting the lastTime variable that is required for the
@@ -97,7 +112,18 @@ var Engine = (function(global) {
             enemy.update(dt);
         });
         player.update();
+
+
+
+
+
+
+
+
+
+
     }
+
 
     /* This function initially draws the "game level", it will then call
      * the renderEntities function. Remember, this function is called every
@@ -109,6 +135,9 @@ var Engine = (function(global) {
         /* This array holds the relative URL to the image used
          * for that particular row of the game level.
          */
+
+          // Prevents anything from getting left on the canvas
+        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);    
         var rowImages = [
                 'images/water-block.png',   // Top row is water
                 'images/stone-block.png',   // Row 1 of 3 of stone
@@ -139,6 +168,7 @@ var Engine = (function(global) {
         }
 
         renderEntities();
+        renderScore(player.getScore());
 
     }
 
@@ -147,14 +177,23 @@ var Engine = (function(global) {
      * on your enemy and player entities within app.js
      */
     function renderEntities() {
+
+        player.render();
+
         /* Loop through all of the objects within the allEnemies array and call
          * the render function you have defined.
          */
         allEnemies.forEach(function(enemy) {
+            enemy.emitter.render();
             enemy.render();
         });
 
-        player.render();
+        
+    }
+
+    function renderScore(score) {
+        ctx.font = "20px Georgia";
+        ctx.fillText("Score: " + score, 10, 20);
     }
 
     /* This function does nothing but it could have been a good place to
