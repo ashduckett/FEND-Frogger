@@ -64,8 +64,10 @@ Player.prototype.update = function() {
     }
 
     // If there was a collision, send player back to starting position
+    // and reset score
     if(collisionFound == true) {
         this.moveToTile(2, 5);
+        this.score = 0;
     }
    
     // If we've got to the water, start the player
@@ -80,8 +82,12 @@ Player.prototype.update = function() {
 // function so it can react
 Player.prototype.handleInput = function(keypressed) {
     
-    // Keypressed is a string and describes direction
-    this.move(keypressed);
+    // Ensure player can't be moved if currently
+    // jumping for joy
+    if(!this.winAnimationTimer.isRunningCallback) {
+        // Keypressed is a string and describes direction
+        this.move(keypressed);
+    }
 };
 
 // Move character appropriately based on key press
