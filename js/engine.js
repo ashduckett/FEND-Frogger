@@ -14,12 +14,6 @@
  * a little simpler to work with.
  */
 
-var loseStartTime = null;
-var interval = null;
-
-
-var myTimer = null;
-
 var Engine = (function(global) {
     /* Predefine the variables we'll be using within this scope,
      * create the canvas element, grab the 2D context for that canvas
@@ -110,18 +104,9 @@ var Engine = (function(global) {
     function updateEntities(dt) {
         allEnemies.forEach(function(enemy) {
             enemy.update(dt);
+            enemy.emitter.update();
         });
         player.update();
-
-
-
-
-
-
-
-
-
-
     }
 
 
@@ -168,7 +153,7 @@ var Engine = (function(global) {
         }
 
         renderEntities();
-        renderScore(player.getScore());
+
 
     }
 
@@ -184,9 +169,11 @@ var Engine = (function(global) {
          * the render function you have defined.
          */
         allEnemies.forEach(function(enemy) {
-            enemy.emitter.render();
             enemy.render();
         });
+
+        renderScore(player.getScore());
+      
 
         
     }
@@ -213,7 +200,8 @@ var Engine = (function(global) {
         'images/water-block.png',
         'images/grass-block.png',
         'images/enemy-bug.png',
-        'images/char-boy.png'
+        'images/char-boy.png',
+        'images/gem-orange.png',
     ]);
     Resources.onReady(init);
 

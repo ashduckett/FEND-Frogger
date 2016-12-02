@@ -1,4 +1,4 @@
-function Particle(startX, startY) {
+function Particle(startX, startY, spriteURL, spriteWidth, spriteHeight) {
 
     // Set a starting position
     this.x = startX;
@@ -10,8 +10,10 @@ function Particle(startX, startY) {
 
     // Any angle will do to start with
     this.angle = MathsUtils.getRandomInt(0, 360);
-    this.width = 32;
-    this.height = 32;
+    
+    // The width and height of the sprite
+    this.width = spriteWidth;
+    this.height = spriteHeight;
 
     // No gravity as we're modelling smoke
     this.gravity = 0;
@@ -24,7 +26,7 @@ function Particle(startX, startY) {
   
     // Create the image object used for each particle
     this.image = new Image();
-    this.image.src = "images/smoke.png";
+    this.image.src = spriteURL
     
     // Start out with full visibility
     this.opacity = 1;
@@ -58,18 +60,24 @@ Particle.prototype.draw = function() {
 };
 
 Particle.prototype.update = function() {
+
+    // If there is any gravity, it should be applied
     this.vy += this.gravity;
 
+    // Age this particle
     this.life++;
 
+    // Apply velocity for this tick
     this.x += this.vx;
     this.y += this.vy;
 
+    // Rotate the particle
     this.angle += 4;
+
+    // Grow the particle
     this.scalePercent += 0.05;
 
-    // Fade out the particle with each frame. This would be done in
-    // update
+    // Fade out the particle with each frame
     if(this.opacity > 0) {
         this.opacity -= 0.02;
     }
@@ -81,16 +89,16 @@ Particle.prototype.update = function() {
     }
 };
 
-// What should this control? 
-    // Start position   DONE
-    // general position DONE
-    // A way to start the system
-
-var Emitter = function(startX, startY, noOfParticlesSpawnEachFrame) {
+var Emitter = function(startX, startY, noOfParticlesSpawnEachFrame, spriteURL, spriteWidth, spriteHeight) {
 
     // Starting position from where particles will be emitted
     this.startX = startX;
     this.startY = startY;
+
+    this.spriteURL = spriteURL;
+
+    this.spriteWidth = spriteWidth;
+    this.spriteHeight = spriteHeight;
 
     // Initially nothing will be emitted
     this.running = false;
@@ -98,12 +106,9 @@ var Emitter = function(startX, startY, noOfParticlesSpawnEachFrame) {
     // The number of particles to spawn on each frame
     this.noOfParticlesSpawnEachFrame = noOfParticlesSpawnEachFrame;
 
-    // Somewhere to store the emitter's particles
-    this.particles = {};
+    // A particle pool
+    this.particles = [];
 };
-
-// Each particle will be given an index which will serve as an id
-Emitter.particleIndex = 0;
 
 // Allows the repositioning of the emitter
 Emitter.prototype.setPos = function(xPos, yPos) {
@@ -111,46 +116,47 @@ Emitter.prototype.setPos = function(xPos, yPos) {
     this.startY = yPos;
 };
 
+// Start the emitter
 Emitter.prototype.start = function() {
     this.running = true;
 }
 
+// Stop the emitter
 Emitter.prototype.stop = function() {
     this.running = false;
 }
 
 Emitter.prototype.render = function() {
+    
+    // Draw each particle this tick
+    this.particles.forEach(function(particle) {
+        particle.draw();
+    });
+};
+
+Emitter.prototype.update = function() {
+
+    // If the emitter is running...
     if(this.running == true) {
+
+        // Create a number of particles for this tick
+        // and store them so they can be manipulated later
         for(var i = 0; i < this.noOfParticlesSpawnEachFrame; i++) {
-            var particleIndex = Emitter.particleIndex++;
-            this.particles[particleIndex] = new Particle(this.startX, this.startY);
-            this.particles[particleIndex].id = particleIndex;
+            this.particles.push(new Particle(this.startX, this.startY, this.spriteURL, this.spriteWidth, this.spriteHeight));
         }
     }
+    var context = this;
+    // Update each particle for this tick
+    this.particles.forEach(function(particle, index) {
+        particle.update();
 
-    // outside of here?
-    this.updateParticles();
-    this.renderParticles();
+        // If the particle has been around too long,
+        // remove it        
+        if(particle.life > particle.maxLife) {
 
-
-    for(var i in this.particles) {
-
-        // If this particle has hit the end of the line, delete it
-        if(this.particles[i].life > this.particles[i].maxLife) {
-            delete this.particles[i];   
+            // Calling delete on particle would have no effect
+            // and caused game to slow
+            delete context.particles[index];   
         }
-    }
-};
-
-Emitter.prototype.updateParticles = function() {
-    for(var i in this.particles) {
-        this.particles[i].update();
-    }
-};
-
-Emitter.prototype.renderParticles = function() {
-
-    for(var i in this.particles) {
-        this.particles[i].draw();
-    }
+    });
 };
